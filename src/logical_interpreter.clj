@@ -91,26 +91,29 @@
 (defn parseDatabase
   "Recibe un string con la definición de la base de datos, y devuelve un mapa de reglas."
   [database]
-  (let [db (atom {})]
-       (doseq [line (map trim (split-lines database))]
-              
-                ;(printf "Parsing Line \"%s\": " line )
-                (cond 
-                      (isFact? line) (do 
-                                        ;(printf "Is Fact\n")
-                                        (addFact db line))
-                      (isRule? line) (do
-                                      ;(printf "Is Rule\n")
-                                       (addRule db line)
-                                       )
-                      ;:else (printf "Ignoring Line\n") ; TODO lanzar error, o de alguna forma invalidar la db
-                )
-       )
-    ;(printf "DB: %s\n" @db)
-    @db
+  ;Hacemos un chequeo preliminar, para no necesitar interrumpir la secuencia mas adelante.
+  (if 
+      (every? #(or (isFact? %) (isRule? %) (blank? %)) (map trim (split-lines database)))
+      (let [db (atom {})]
+           (doseq [line (map trim (split-lines database))]
+                  ;(printf "Parsing Line \"%s\": " line )
+                  (cond 
+                        (isFact? line) (do 
+                                           ;(printf "Is Fact\n")
+                                           (addFact db line))
+                        (isRule? line) (do
+                                           ;(printf "Is Rule\n")
+                                           (addRule db line)
+                                           )
+                        ;:else (printf "Ignoring Line\n")
+                  )
+           )
+          ;(printf "DB: %s\n" @db)
+          @db
+      )
+      nil
   )
-)
-  
+)  
   
 
 (defn evaluate-query
@@ -123,7 +126,8 @@
         ]
     ;(printf "Getting Verb: %s\n" query-verb)
     ;(printf "Data: %s\n" ((data query-verb) query-parameters))
-    (when-let [rule-evaluator (data query-verb)]
-	    (rule-evaluator query-parameters))  
+    (when-let [rule-evaluator (get data query-verb)]
+	(rule-evaluator query-parameters)
+	)  
   )
 )
